@@ -12,7 +12,10 @@ const envSchema = z.object({
 
 const env = envSchema.parse(process.env);
 
-const AUTHENTICATED_API_ROUTES: ApiRoute[] = [{ path: "/api/users" }];
+const AUTHENTICATED_API_ROUTES: ApiRoute[] = [
+  { path: "/api/fake-data" },
+  { path: "/api/users" },
+];
 
 export function withAuthentication(middleware: NextMiddleware) {
   return async (request: NextRequest, event: NextFetchEvent) => {
@@ -36,14 +39,11 @@ export function withAuthentication(middleware: NextMiddleware) {
 
       if (!token) {
         return NextResponse.json(
+          {},
           {
-            success: false,
-            error: {
-              code: "UNAUTHENTICATED",
-              message: "Authentication required",
-            },
-          },
-          { status: 401 }
+            status: 401,
+            statusText: "Unauthorized",
+          }
         );
       }
     }

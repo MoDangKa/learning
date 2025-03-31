@@ -1,4 +1,4 @@
-import { LoginAPI } from "@/interfaces/api/login";
+import { LoginResponseData } from "@/interfaces/api/external/user";
 import apiService from "@/lib/apiService";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { status, statusText, data } = await apiService<LoginAPI>({
+  const { status, statusText, data } = await apiService<LoginResponseData>({
     method: "POST",
     url: `${env.API_URL}/login`,
     data: json,
