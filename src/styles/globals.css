@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  --slate-500: oklch(0.554 0.046 257.417);
+  --slate-700: oklch(0.372 0.044 257.287);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.ant-form__custom {
+  @apply px-4 py-6;
+
+  &.ant-form-vertical .ant-col.ant-form-item-label {
+    > label.ant-form-item-required {
+      @apply before:hidden after:inline-flex after:ms-1 after:content-['*'] after:visible;
+    }
+  }
+}
+
+.ant-form-item__custom > .ant-row.ant-form-item-row {
+  .ant-col.ant-form-item-label {
+    @apply pb-1;
+
+    > label {
+      @apply text-slate-100 before:text-red-500 after:text-red-500 font-light;
+    }
+  }
+
+  .ant-col.ant-form-item-control
+    .ant-form-item-additional
+    .ant-form-item-explain-error {
+    @apply text-sm mt-0.5;
+  }
+}
+
+.basic-card {
+  @apply bg-slate-700 dark:bg-slate-800 text-white rounded-lg;
+
+  hr {
+    @apply border-t-slate-500 dark:border-t-slate-600;
+  }
+}
