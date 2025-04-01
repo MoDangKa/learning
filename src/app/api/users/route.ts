@@ -26,21 +26,17 @@ export async function GET(request: NextRequest) {
     );
 
     if (response.status === 200) {
-      const mappedUserList: MappedUser[] = response.data.users.map(
-        ({
-          password_reset_token,
-          password_reset_expires,
-          created_at,
-          updated_at,
-          ...user
-        }) => ({
-          ...user,
-          passwordResetToken: password_reset_token,
-          passwordResetExpires: password_reset_expires,
-          createdAt: created_at,
-          updatedAt: updated_at,
-        })
-      );
+      const mappedUserList: MappedUser[] = response.data.users.map((user) => ({
+        id: user.id,
+        email: user.email,
+        password: user.password,
+        name: user.name,
+        photo: user.photo,
+        role: user.role,
+        active: user.active,
+        createdAt: user.created_at,
+        updatedAt: user.updated_at,
+      }));
       return NextResponse.json(
         { users: mappedUserList },
         {

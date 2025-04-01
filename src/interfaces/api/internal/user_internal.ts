@@ -1,13 +1,13 @@
-export interface MappedUser {
-  id: number;
-  email: string;
-  password: string;
-  name: string;
-  photo: string;
-  role: string;
-  active: boolean;
-  passwordResetToken: string;
-  passwordResetExpires: string;
+import { RawUser } from "../external/user_external";
+
+export interface MappedUser
+  extends Omit<
+    RawUser,
+    | "password_reset_token"
+    | "password_reset_expires"
+    | "created_at"
+    | "updated_at"
+  > {
   createdAt: string;
   updatedAt: string;
 }
