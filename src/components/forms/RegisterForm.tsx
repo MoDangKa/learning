@@ -72,7 +72,7 @@ export default function LoginForm() {
       <hr className="mb-3" />
       <div>
         <Form.Item<FieldType>
-          label="ชื่อผู้ใช้"
+          label="อีเมล"
           name="email"
           className="ant-form-item__custom"
           rules={[
