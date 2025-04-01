@@ -1,4 +1,4 @@
-import { LoginResponseData } from "@/interfaces/api/external/user_external";
+import type { RawLoginResponseData } from "@/interfaces/api/user";
 import { api, handleApiError } from "@/lib/apiService";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const json = await request.json();
     const data = dataSchema.parse(json);
 
-    const response = await api.post<LoginResponseData>(
+    const response = await api.post<RawLoginResponseData>(
       `${env.API_URL}/login`,
       data
     );

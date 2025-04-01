@@ -20,22 +20,17 @@ const AUTHENTICATED_API_ROUTES: ApiRoute[] = [
 
 export function withAuthentication(middleware: NextMiddleware) {
   return async (request: NextRequest, event: NextFetchEvent) => {
-    const requiresAuth = checkApiRoutes(request, AUTHENTICATED_API_ROUTES);
-
-    if (requiresAuth) {
-      const token = request.cookies.get(env.JWT_TOKEN)?.value;
-
-      if (!token) {
-        return NextResponse.json(
-          {},
-          {
-            status: 401,
-            statusText: "Unauthorized",
-          }
-        );
-      }
+    const token = request.cookies.get(env.JWT_TOKEN)?.value;
+    const require = checkApiRoutes(request, AUTHENTICATED_API_ROUTES);
+    if (require && !token) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        {
+          status: 401,
+          statusText: "Unauthorized",
+        }
+      );
     }
-
     return middleware(request, event);
   };
 }
