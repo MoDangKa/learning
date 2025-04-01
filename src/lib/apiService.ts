@@ -1,95 +1,110 @@
-import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
+import type { AxiosError, AxiosRequestConfig } from "axios";
 import axios from "axios";
+import { z } from "zod";
 
-export type ApiServiceResponse<T = EmptyObj> = Pick<
-  AxiosResponse<T>,
-  "status" | "statusText" | "data"
-> & {
-  success: boolean;
-  error?: string;
-};
+// Constants
+const DEFAULT_TIMEOUT = 10000; // 10 seconds
+const NETWORK_ERROR_STATUS = 504;
+const INTERNAL_ERROR_STATUS = 500;
 
+// Types
 export type EmptyObj = Record<string, never>;
 
+export type ApiServiceResponse<T = EmptyObj> = {
+  status: number;
+  statusText: string;
+  data: T;
+  success: boolean;
+  error?: string;
+  errors?: z.ZodError["errors"] | unknown[];
+};
+
+export type ErrorResponseData = {
+  code?: string | number;
+  message?: string;
+  errors?: unknown[];
+};
+
+// Default configuration
 const defaultConfig: AxiosRequestConfig = {
-  timeout: 10000, // 10 seconds
+  timeout: DEFAULT_TIMEOUT,
   headers: {
     "Content-Type": "application/json",
   },
+  validateStatus: (status) => status < 500, // Consider 5xx errors as failures
 };
 
+// Error utilities
 const isNetworkError = (error: AxiosError): boolean => {
-  return !error.response && error.request;
+  return !error.response && !!error.request;
+};
+
+const isTimeoutError = (error: AxiosError): boolean => {
+  return error.code === "ECONNABORTED" || error.message.includes("timeout");
+};
+
+const getErrorResponseData = (error: AxiosError): ErrorResponseData => {
+  if (error.response?.data && typeof error.response.data === "object") {
+    return error.response.data as ErrorResponseData;
+  }
+  return {};
 };
 
 const getErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
     if (error.response) {
+      const data = getErrorResponseData(error);
       return (
-        error.response.data?.message ||
+        data.message ||
         error.response.statusText ||
         `Request failed with status ${error.response.status}`
       );
+    }
+    if (isTimeoutError(error)) {
+      return "Request timeout - please try again";
     }
     if (isNetworkError(error)) {
       return "Network error - please check your connection";
     }
   }
+  if (error instanceof z.ZodError) {
+    return "Validation error";
+  }
   return (error as Error)?.message || "Unknown error occurred";
 };
 
-export const handleAxiosError = <T = EmptyObj>(
+// Error handler
+export const handleError = <T = EmptyObj>(
   error: unknown
 ): ApiServiceResponse<T> => {
-  console.error("API Service Error:", error);
+  if (error instanceof z.ZodError) {
+    return {
+      status: 400,
+      statusText: "Bad Request",
+      data: { error: "Invalid input", details: error.errors } as T,
+      success: false,
+      error: "Validation error",
+      errors: error.errors,
+    };
+  }
 
   if (axios.isAxiosError(error)) {
     if (error.response) {
-      if (error.response?.status === 401) {
-        return {
-          status: 401,
-          statusText: "Unauthorized",
-          data: {} as T,
-          success: false,
-          error: "Unauthorized access - check your authentication credentials.",
-        };
-      }
-
-      if (error.response?.status === 403) {
-        return {
-          status: 403,
-          statusText: "Forbidden",
-          data: {} as T,
-          success: false,
-          error:
-            "Access denied - you don't have permission to access this resource.",
-        };
-      }
-
-      if (error.response?.status === 404) {
-        return {
-          status: 404,
-          statusText: "Not Found",
-          data: {} as T,
-          success: false,
-          error: "The requested resource could not be found.",
-        };
-      }
-
-      if (error.response?.data?.code) {
-        return {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          data: {} as T,
-          success: false,
-          error: `Error ${error.response.data.code}: ${error.response.data.message}`,
-        };
-      }
+      const data = getErrorResponseData(error);
+      return {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: (error.response.data ?? {}) as T,
+        success: false,
+        error: data.message || error.response.statusText,
+        errors: data.errors,
+      };
     }
 
+    const isNetwork = isNetworkError(error);
     return {
-      status: isNetworkError(error) ? 504 : 500,
-      statusText: isNetworkError(error) ? "Request timeout" : "Internal error",
+      status: isNetwork ? NETWORK_ERROR_STATUS : INTERNAL_ERROR_STATUS,
+      statusText: isNetwork ? "Network Error" : "Internal Server Error",
       data: {} as T,
       success: false,
       error: getErrorMessage(error),
@@ -97,7 +112,7 @@ export const handleAxiosError = <T = EmptyObj>(
   }
 
   return {
-    status: 500,
+    status: INTERNAL_ERROR_STATUS,
     statusText: "Internal Server Error",
     data: {} as T,
     success: false,
@@ -107,12 +122,35 @@ export const handleAxiosError = <T = EmptyObj>(
 
 const axiosInstance = axios.create(defaultConfig);
 
-const apiService = async <T = unknown>(
-  config: AxiosRequestConfig
+axiosInstance.interceptors.request.use(
+  (config) => {
+    // You can modify requests here (e.g., add auth token)
+    // const token = localStorage.getItem('token');
+    // if (token) {
+    //   config.headers.Authorization = `Bearer ${token}`;
+    // }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // You can add global response error handling here
+    return Promise.reject(error);
+  }
+);
+
+export const apiService = async <T = unknown, D = unknown>(
+  config: AxiosRequestConfig<D>
 ): Promise<ApiServiceResponse<T>> => {
-  const mergedConfig = { ...defaultConfig, ...config };
   try {
-    const response = await axiosInstance(mergedConfig);
+    const response = await axiosInstance({
+      ...defaultConfig,
+      ...config,
+    });
+
     return {
       status: response.status,
       statusText: response.statusText,
@@ -120,8 +158,33 @@ const apiService = async <T = unknown>(
       success: true,
     };
   } catch (error) {
-    return handleAxiosError<T>(error);
+    return handleError<T>(error);
   }
+};
+
+export const api = {
+  get: <T = unknown, D = unknown>(
+    url: string,
+    params?: D,
+    config?: AxiosRequestConfig
+  ) => axiosInstance<T>({ ...config, method: "GET", url, params }),
+  post: <T = unknown, D = unknown>(
+    url: string,
+    data?: D,
+    config?: AxiosRequestConfig<D>
+  ) => axiosInstance<T>({ ...config, method: "POST", url, data }),
+  put: <T = unknown, D = unknown>(
+    url: string,
+    data?: D,
+    config?: AxiosRequestConfig<D>
+  ) => axiosInstance<T>({ ...config, method: "PUT", url, data }),
+  patch: <T = unknown, D = unknown>(
+    url: string,
+    data?: D,
+    config?: AxiosRequestConfig<D>
+  ) => axiosInstance<T>({ ...config, method: "PATCH", url, data }),
+  delete: <T = unknown>(url: string, config?: AxiosRequestConfig) =>
+    axiosInstance<T>({ ...config, method: "DELETE", url }),
 };
 
 export default apiService;
