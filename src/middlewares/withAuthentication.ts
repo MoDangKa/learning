@@ -1,3 +1,4 @@
+import { checkApiRoutes } from "@/lib/utils";
 import {
   NextFetchEvent,
   NextMiddleware,
@@ -19,20 +20,7 @@ const AUTHENTICATED_API_ROUTES: ApiRoute[] = [
 
 export function withAuthentication(middleware: NextMiddleware) {
   return async (request: NextRequest, event: NextFetchEvent) => {
-    const pathname = request.nextUrl.pathname;
-
-    const requiresAuth = AUTHENTICATED_API_ROUTES.some((route) => {
-      const pathMatches =
-        typeof route.path === "string"
-          ? pathname.startsWith(route.path)
-          : route.path.test(pathname);
-
-      const methodMatches = route.methods
-        ? route.methods.includes(request.method)
-        : true;
-
-      return pathMatches && methodMatches;
-    });
+    const requiresAuth = checkApiRoutes(request, AUTHENTICATED_API_ROUTES);
 
     if (requiresAuth) {
       const token = request.cookies.get(env.JWT_TOKEN)?.value;

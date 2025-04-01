@@ -1,5 +1,6 @@
 import type { AxiosError, AxiosRequestConfig } from "axios";
 import axios from "axios";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 
 // Constants
@@ -118,6 +119,14 @@ export const handleError = <T = EmptyObj>(
     success: false,
     error: getErrorMessage(error),
   };
+};
+
+export const handleApiError = (error: unknown) => {
+  const errorResponse = handleError(error);
+  return NextResponse.json(errorResponse.data, {
+    status: errorResponse.status,
+    statusText: errorResponse.statusText,
+  });
 };
 
 const axiosInstance = axios.create(defaultConfig);

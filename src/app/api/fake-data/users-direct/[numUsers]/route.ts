@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/apiService";
 import { getClient } from "@/lib/database";
 import { faker } from "@faker-js/faker";
 import bcrypt from "bcrypt";
@@ -10,14 +11,6 @@ const envSchema = z.object({
 
 const env = envSchema.parse(process.env);
 const SALT_ROUNDS = 10;
-
-function handleErrorResponse(error: unknown) {
-  console.error("Error occurred:", error);
-  return NextResponse.json(
-    { error: "An unexpected error occurred" },
-    { status: 500 }
-  );
-}
 
 export async function POST(
   request: NextRequest,
@@ -60,6 +53,6 @@ export async function POST(
       { status: 201, statusText: "Fake data creation successful" }
     );
   } catch (error: unknown) {
-    return handleErrorResponse(error);
+    return handleApiError(error);
   }
 }

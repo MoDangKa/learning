@@ -1,3 +1,4 @@
+import { checkApiRoutes } from "@/lib/utils";
 import {
   NextFetchEvent,
   NextMiddleware,
@@ -13,11 +14,15 @@ const envSchema = z.object({
 
 const env = envSchema.parse(process.env);
 
+const DEVELOPMENT_API_ROUTES: ApiRoute[] = [{ path: "/api/fake-data" }];
+
 export function withDevelopment(middleware: NextMiddleware) {
   return async (request: NextRequest, event: NextFetchEvent) => {
-    if (env.MODE !== "development") {
+    const requiresAuth = checkApiRoutes(request, DEVELOPMENT_API_ROUTES);
+
+    if (requiresAuth && env.MODE !== "development") {
       return NextResponse.json(
-        {},
+        { error: "This endpoint is for development only" },
         {
           status: 403,
           statusText: "Dev mode required",

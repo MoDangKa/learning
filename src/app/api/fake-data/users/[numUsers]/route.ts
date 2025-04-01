@@ -1,4 +1,4 @@
-import { handleAxiosError } from "@/lib/apiService";
+import { handleApiError } from "@/lib/apiService";
 import { faker } from "@faker-js/faker";
 import axios from "axios";
 import { NextRequest, NextResponse } from "next/server";
@@ -35,13 +35,6 @@ export async function POST(
 
   const token = request.cookies.get(env.JWT_TOKEN)?.value;
 
-  if (!token) {
-    return NextResponse.json(
-      { error: "Authentication token missing or invalid" },
-      { status: 401 }
-    );
-  }
-
   try {
     const registerList = [];
     for (let i = 0; i < numUsers; i++) {
@@ -73,7 +66,7 @@ export async function POST(
       { success: true, registered: successes },
       { status: 201, statusText: "Fake data is successful" }
     );
-  } catch (error: unknown) {
-    return handleAxiosError(error);
+  } catch (error) {
+    return handleApiError(error);
   }
 }
