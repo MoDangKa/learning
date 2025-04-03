@@ -37,7 +37,7 @@ export default function LoginForm() {
     });
 
     if (success) {
-      router.push("/");
+      router.push("/users-a");
       openNotification(statusText, NotiType.SUCCESS);
     } else {
       openNotification(statusText, NotiType.ERROR);

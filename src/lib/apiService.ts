@@ -1,4 +1,4 @@
-import type { AxiosError, AxiosRequestConfig } from "axios";
+import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 import axios from "axios";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -155,45 +155,27 @@ export const apiService = async <T = unknown, D = unknown>(
   config: AxiosRequestConfig<D>
 ): Promise<ApiServiceResponse<T>> => {
   try {
-    const response = await axiosInstance({
+    const response: AxiosResponse<T> = await axiosInstance({
       ...defaultConfig,
       ...config,
     });
+
+    const isSuccess = response.status >= 200 && response.status < 300;
 
     return {
       status: response.status,
       statusText: response.statusText,
       data: response.data,
-      success: true,
+      success: isSuccess,
+      ...(!isSuccess && {
+        error: response.statusText,
+      }),
     };
   } catch (error) {
     return handleError<T>(error);
   }
 };
 
-export const api = {
-  get: <T = unknown, D = unknown>(
-    url: string,
-    params?: D,
-    config?: AxiosRequestConfig
-  ) => axiosInstance<T>({ ...config, method: "GET", url, params }),
-  post: <T = unknown, D = unknown>(
-    url: string,
-    data?: D,
-    config?: AxiosRequestConfig<D>
-  ) => axiosInstance<T>({ ...config, method: "POST", url, data }),
-  put: <T = unknown, D = unknown>(
-    url: string,
-    data?: D,
-    config?: AxiosRequestConfig<D>
-  ) => axiosInstance<T>({ ...config, method: "PUT", url, data }),
-  patch: <T = unknown, D = unknown>(
-    url: string,
-    data?: D,
-    config?: AxiosRequestConfig<D>
-  ) => axiosInstance<T>({ ...config, method: "PATCH", url, data }),
-  delete: <T = unknown>(url: string, config?: AxiosRequestConfig) =>
-    axiosInstance<T>({ ...config, method: "DELETE", url }),
-};
+export { axiosInstance };
 
 export default apiService;

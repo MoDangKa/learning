@@ -1,5 +1,5 @@
 import type { RawLoginResponseData } from "@/interfaces/api/user";
-import { api, handleApiError } from "@/lib/apiService";
+import { axiosInstance, handleApiError } from "@/lib/apiService";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -26,10 +26,11 @@ export async function POST(request: NextRequest) {
     const json = await request.json();
     const data = dataSchema.parse(json);
 
-    const response = await api.post<RawLoginResponseData>(
-      `${env.API_URL}/login`,
-      data
-    );
+    const response = await axiosInstance<RawLoginResponseData>({
+      method: "POST",
+      url: `${env.API_URL}/login`,
+      data,
+    });
 
     const result = NextResponse.json(response.data, {
       status: response.status,

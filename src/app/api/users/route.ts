@@ -1,5 +1,5 @@
 import type { RawUsersResponseData, User } from "@/interfaces/api/user";
-import { api, handleApiError } from "@/lib/apiService";
+import { axiosInstance, handleApiError } from "@/lib/apiService";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -14,15 +14,13 @@ export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get(env.JWT_TOKEN)?.value;
 
-    const response = await api.get<RawUsersResponseData>(
-      `${env.API_URL}/users`,
-      null,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await axiosInstance<RawUsersResponseData>({
+      method: "GET",
+      url: `${env.API_URL}/users`,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     if (response.status === 200) {
       const mappedUserList: User[] = response.data.users.map((user) => ({

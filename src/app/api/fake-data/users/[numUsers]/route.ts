@@ -1,6 +1,5 @@
-import { handleApiError } from "@/lib/apiService";
+import { axiosInstance, handleApiError } from "@/lib/apiService";
 import { faker } from "@faker-js/faker";
-import axios from "axios";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -46,9 +45,11 @@ export async function POST(
       };
 
       registerList.push(() =>
-        axios.post(`${env.API_URL}/register`, data, {
+        axiosInstance({
+          method: "POST",
+          url: `${env.API_URL}/register`,
+          data,
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         })

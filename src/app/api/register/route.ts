@@ -1,4 +1,4 @@
-import { api, handleApiError } from "@/lib/apiService";
+import { axiosInstance, handleApiError } from "@/lib/apiService";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -35,7 +35,11 @@ export async function POST(request: NextRequest) {
     const json = await request.json();
     const data = dataSchema.parse(json);
 
-    const response = await api.post(`${env.API_URL}/register`, data);
+    const response = await axiosInstance({
+      method: "POST",
+      url: `${env.API_URL}/register`,
+      data,
+    });
 
     return NextResponse.json(response.data, {
       status: response.status,

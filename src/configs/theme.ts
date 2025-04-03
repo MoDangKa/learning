@@ -39,5 +39,8 @@ export const themeConfig: ThemeConfig = {
     Table: {
       // colorText: "var(--text-color-01)",
     },
+    Anchor: {
+      colorText: "white",
+    },
   },
 };

@@ -32,7 +32,7 @@ export default function LoginForm() {
     });
 
     if (success) {
-      router.push("/");
+      router.push("/login");
       toast.success(statusText);
     } else {
       toast.error(statusText);
